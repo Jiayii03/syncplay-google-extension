@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Sync playback between Youtube and Spotify",
   "permissions": ["storage", "tabs", "activeTab", "scripting", "identity"],
-  "host_permissions": ["https://*.youtube.com/*", "https://api.spotify.com/*"],
+  "host_permissions": ["https://*.youtube.com/*", "https://api.spotify.com/*", "https://*.udemy.com/*"],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://*.youtube.com/*"],
+      "matches": ["https://*.youtube.com/*", "https://*.udemy.com/*"],
       "js": ["contentScript.js"]
     }
   ],

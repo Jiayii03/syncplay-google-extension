@@ -29,8 +29,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.type === "youtube-state-change") {
-    const spotifyPlaying = await isSpotifyPlaying();
+  if (message.type === "youtube-state-change" || message.type === "udemy-state-change") {
 
     if (message.state === "pause") {
       controlSpotifyPlayback("play");
