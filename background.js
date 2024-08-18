@@ -32,9 +32,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === "youtube-state-change") {
     const spotifyPlaying = await isSpotifyPlaying();
 
-    if (message.state === "pause" && !spotifyPlaying) {
+    if (message.state === "pause") {
       controlSpotifyPlayback("play");
-    } else if (message.state === "play" && spotifyPlaying) {
+    } else if (message.state === "play" ) {
       controlSpotifyPlayback("pause");
     }
   } else if (message.action === "getAccessToken") {
@@ -127,7 +127,7 @@ async function controlSpotifyPlayback(action) {
     }).then((response) => {
       console.log("Spotify playback response:", response);
       if (!response.ok) {
-        console.error("Failed to control Spotify playback:", response);
+        console.log("Failed to control Spotify playback, this might be due to manually-triggered playback:", response);
       }
     });
   });
