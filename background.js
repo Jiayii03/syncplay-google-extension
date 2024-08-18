@@ -1,4 +1,5 @@
 let accessToken = "";
+let tokenExpiresAt = 0;
 
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("SyncPlay Extension Installed");
@@ -8,22 +9,26 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    // When the active tab changes
-    chrome.tabs.get(activeInfo.tabId, async (tab) => {
-      if (tab.url && tab.url.includes("youtube.com/watch")) {
-        console.log("Switched to a YouTube tab");
-        await isSpotifyPlaying();
-      }
-    });
-  });
-  
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    // When the tab is updated (e.g., user navigates to YouTube)
-    if (changeInfo.status === 'complete' && tab.url && tab.url.includes("youtube.com/watch")) {
-      console.log("Navigated to a YouTube tab");
+  // When the active tab changes
+  chrome.tabs.get(activeInfo.tabId, async (tab) => {
+    if (tab.url && tab.url.includes("youtube.com/watch")) {
+      console.log("Switched to a YouTube tab");
       await isSpotifyPlaying();
     }
   });
+});
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  // When the tab is updated (e.g., user navigates to YouTube)
+  if (
+    changeInfo.status === "complete" &&
+    tab.url &&
+    tab.url.includes("youtube.com/watch")
+  ) {
+    console.log("Navigated to a YouTube tab");
+    await isSpotifyPlaying();
+  }
+});
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.type === "youtube-state-change") {
@@ -40,9 +45,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 async function authenticateSpotify() {
   const clientId = "187feba282c644a3a78741de1049e6c1";
   const redirectUri = chrome.identity.getRedirectURL("spotify");
-  console.log("Redirect URI: ", redirectUri);
 
-  const scopes = "user-read-playback-state user-modify-playback-state"; // to enable read and modify playback state
+  const scopes = "user-read-playback-state user-modify-playback-state";
   const encodedScopes = encodeURIComponent(scopes);
   const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&scope=${encodedScopes}`;
 
@@ -56,8 +60,11 @@ async function authenticateSpotify() {
         if (redirectUrl) {
           const urlParams = new URLSearchParams(redirectUrl.split("#")[1]);
           accessToken = urlParams.get("access_token");
+          const expiresIn = parseInt(urlParams.get("expires_in"), 10);
+          console.log("Access token expires in", expiresIn, "seconds");
+          tokenExpiresAt = Date.now() + expiresIn * 1000;
           console.log("Access token obtained: ", accessToken);
-          resolve(); // Resolve the promise once the token is obtained
+          resolve();
         } else {
           reject("Failed to authenticate with Spotify");
         }
@@ -66,7 +73,16 @@ async function authenticateSpotify() {
   });
 }
 
+async function ensureValidToken() {
+  if (Date.now() >= tokenExpiresAt) {
+    console.log("Access token has expired, re-authenticating...");
+    await authenticateSpotify();
+  }
+}
+
 async function isSpotifyPlaying() {
+  await ensureValidToken();
+
   return fetch("https://api.spotify.com/v1/me/player", {
     method: "GET",
     headers: {
@@ -107,16 +123,18 @@ async function isSpotifyPlaying() {
     });
 }
 
-function controlSpotifyPlayback(action) {
-  fetch(`https://api.spotify.com/v1/me/player/${action}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  }).then((response) => {
-    console.log("Control Spotify playback response: ", response);
-    if (!response.ok) {
-      console.error("Failed to control Spotify playback:", response);
-    }
+async function controlSpotifyPlayback(action) {
+  ensureValidToken().then(() => {
+    fetch(`https://api.spotify.com/v1/me/player/${action}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }).then((response) => {
+      console.log("Control Spotify playback response: ", response);
+      if (!response.ok) {
+        console.error("Failed to control Spotify playback:", response);
+      }
+    });
   });
 }
