@@ -13,5 +13,9 @@
       "js": ["contentScript.js"]
     }
   ],
+  "action": {
+    "default_title": "SyncPlay",
+    "default_popup": "popup.html"
+  },
   "manifest_version": 3
 }

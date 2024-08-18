@@ -3,6 +3,8 @@ let tokenExpiresAt = 0;
 
 chrome.runtime.onInstalled.addListener(async () => {
   await authenticateSpotify();
+  console.log("Access token:", accessToken);
+  console.log("Spotify is authenticated");
   await isSpotifyPlaying();
 });
 
@@ -35,6 +37,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     } else if (message.state === "play" && spotifyPlaying) {
       controlSpotifyPlayback("pause");
     }
+  } else if (message.action === "getAccessToken") {
+    sendResponse({ accessToken: accessToken });
   }
 });
 
@@ -121,6 +125,7 @@ async function controlSpotifyPlayback(action) {
         Authorization: `Bearer ${accessToken}`,
       },
     }).then((response) => {
+      console.log("Spotify playback response:", response);
       if (!response.ok) {
         console.error("Failed to control Spotify playback:", response);
       }
