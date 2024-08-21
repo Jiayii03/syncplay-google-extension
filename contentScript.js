@@ -17,6 +17,7 @@ function addVideoEventListeners(video, platform) {
       });
       console.log(`${platform} pause`);
     });
+
   }
 }
 
@@ -31,7 +32,6 @@ function observeVideo(platform) {
           observer.disconnect(); // Stop observing once the video is found and listeners are added
         } else if (node.querySelector && node.querySelector('video')) {
           addVideoEventListeners(node.querySelector('video'), platform);
-          observer.disconnect(); // Stop observing once the video is found and listeners are added
         }
       });
     });
@@ -43,7 +43,6 @@ function observeVideo(platform) {
   const existingVideo = document.querySelector("video");
   if (existingVideo) {
     addVideoEventListeners(existingVideo, platform);
-    observer.disconnect(); // Stop observing if video is already present
   }
 }
 
